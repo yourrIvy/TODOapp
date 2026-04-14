@@ -3,6 +3,7 @@ package com.train.todoapp.web;
 import com.train.todoapp.controller.TaskListController;
 import com.train.todoapp.entity.dto.response.TaskListResponseDTO;
 import com.train.todoapp.service.TaskListService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -34,6 +35,7 @@ public class TaskListControllerTest {
     @MockitoBean
     private TaskListService taskListService;
 
+    @DisplayName("Возвращает список задач по идентификатору")
     @Test
     void shouldReturnTaskListById() throws Exception {
         TaskListResponseDTO responseDTO = new TaskListResponseDTO();
@@ -56,6 +58,7 @@ public class TaskListControllerTest {
                         """, false));
     }
 
+    @DisplayName("Создает список задач")
     @Test
     void shouldCreateTaskList() throws Exception {
         TaskListResponseDTO responseDTO = new TaskListResponseDTO();
@@ -86,6 +89,59 @@ public class TaskListControllerTest {
                         """, false));
     }
 
+    @DisplayName("Обновляет список задач по идентификатору")
+    @Test
+    void shouldUpdateTaskListById() throws Exception {
+        TaskListResponseDTO responseDTO = new TaskListResponseDTO();
+        responseDTO.setId(5L);
+        responseDTO.setName("Updated List");
+        responseDTO.setAuthorId(30L);
+        responseDTO.setExecutorId(40L);
+
+        when(taskListService.updateById(eq(5L), any(com.train.todoapp.entity.dto.request.TaskListRequestDTO.class)))
+                .thenReturn(responseDTO);
+
+        mockMvc.perform(put("/api/v1/lists/5")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Updated List",
+                                  "authorId": 30,
+                                  "executorId": 40
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                          {
+                            "id": 5,
+                            "name": "Updated List",
+                            "authorId": 30,
+                            "executorId": 40
+                          }
+                        """, false));
+    }
+
+    @DisplayName("Добавляет задачу в список")
+    @Test
+    void shouldAddTaskToListByIds() throws Exception {
+        when(taskListService.addTaskToList(7L, 17L)).thenReturn(new TaskListResponseDTO());
+
+        mockMvc.perform(post("/api/v1/lists/7/tasks/17"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+    }
+
+    @DisplayName("Удаляет задачу из списка")
+    @Test
+    void shouldRemoveTaskFromListByIds() throws Exception {
+        when(taskListService.deleteTaskFromList(7L, 17L)).thenReturn(new TaskListResponseDTO());
+
+        mockMvc.perform(delete("/api/v1/lists/7/tasks/17"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+    }
+
+    @DisplayName("Возвращает списки задач постранично")
     @Test
     void shouldReturnPagedTaskLists() throws Exception {
         TaskListResponseDTO responseDTO = new TaskListResponseDTO();
@@ -113,36 +169,7 @@ public class TaskListControllerTest {
                         """, false));
     }
 
-    @Test
-    void shouldUpdateTaskListById() throws Exception {
-        TaskListResponseDTO responseDTO = new TaskListResponseDTO();
-        responseDTO.setId(4L);
-        responseDTO.setName("Updated List");
-        responseDTO.setAuthorId(13L);
-        responseDTO.setExecutorId(23L);
-
-        when(taskListService.updateById(eq(4L), any())).thenReturn(responseDTO);
-
-        mockMvc.perform(put("/api/v1/lists/4")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "name": "Updated List",
-                                  "authorId": 13,
-                                  "executorId": 23
-                                }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(content().json("""
-                          {
-                            "id": 4,
-                            "name": "Updated List",
-                            "authorId": 13,
-                            "executorId": 23
-                          }
-                        """, false));
-    }
-
+    @DisplayName("Частично обновляет список задач по идентификатору")
     @Test
     void shouldPatchTaskListById() throws Exception {
         TaskListResponseDTO responseDTO = new TaskListResponseDTO();
@@ -173,29 +200,12 @@ public class TaskListControllerTest {
                         """, false));
     }
 
+    @DisplayName("Удаляет список задач по идентификатору")
     @Test
     void shouldDeleteTaskListById() throws Exception {
         doNothing().when(taskListService).deleteById(6L);
 
         mockMvc.perform(delete("/api/v1/lists/6"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(""));
-    }
-
-    @Test
-    void shouldAddTaskToListByIds() throws Exception {
-        doNothing().when(taskListService).addTaskToList(7L, 8L);
-
-        mockMvc.perform(post("/api/v1/lists/7/tasks/8"))
-                .andExpect(status().isOk())
-                .andExpect(content().string(""));
-    }
-
-    @Test
-    void shouldRemoveTaskFromListByIds() throws Exception {
-        doNothing().when(taskListService).deleteTaskFromList(7L, 8L);
-
-        mockMvc.perform(delete("/api/v1/lists/7/tasks/8"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(""));
     }

@@ -5,11 +5,12 @@ import com.train.todoapp.entity.TaskList;
 import com.train.todoapp.entity.User;
 import com.train.todoapp.entity.dto.request.TaskListRequestDTO;
 import com.train.todoapp.entity.dto.response.TaskListResponseDTO;
+import com.train.todoapp.entity.dto.response.TaskResponseDTO;
 import com.train.todoapp.entity.mapper.TaskListMapper;
+import com.train.todoapp.exception.TaskNotInListException;
 import com.train.todoapp.repository.TaskListRepository;
-import com.train.todoapp.repository.TaskRepository;
-import com.train.todoapp.repository.UserRepository;
 import com.train.todoapp.service.TaskListService;
+import com.train.todoapp.service.TaskService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,10 +36,7 @@ class TaskListServiceTest {
     private TaskListMapper taskListMapper;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private TaskRepository taskRepository;
+    private TaskService taskService;
 
     @InjectMocks
     private TaskListService taskListService;
@@ -79,58 +77,63 @@ class TaskListServiceTest {
 
     @Test
     @DisplayName("Добавление задачи в список должно сохранить задачу")
-    void shouldAddTaskToListAndSave() {
+    void shouldAddTaskToListAndSaveTask() {
         TaskList taskList = new TaskList();
-        taskList.setId(1L);
+        taskList.setId(11L);
 
-        Task task = Task.builder().id(2L).title("From add").build();
+        TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
+        taskResponseDTO.setId(21L);
 
-        when(taskListRepository.findById(1L)).thenReturn(Optional.of(taskList));
-        when(taskRepository.findById(2L)).thenReturn(Optional.of(task));
-        when(taskRepository.save(task)).thenReturn(task);
+        TaskListResponseDTO response = new TaskListResponseDTO();
+        response.setId(11L);
 
-        taskListService.addTaskToList(1L, 2L);
+        when(taskListRepository.findById(11L)).thenReturn(Optional.of(taskList));
+        when(taskService.addTaskListId(21L, taskList)).thenReturn(taskResponseDTO);
+        when(taskListRepository.findById(11L)).thenReturn(Optional.of(taskList));
+        when(taskListMapper.toTaskListResponseDTO(taskList)).thenReturn(response);
 
-        assertThat(task.getTaskList()).isEqualTo(taskList);
-        verify(taskRepository).save(task);
+        TaskListResponseDTO result = taskListService.addTaskToList(11L, 21L);
+
+        assertThat(result.getId()).isEqualTo(11L);
+        verify(taskService).addTaskListId(21L, taskList);
     }
 
     @Test
     @DisplayName("Удаление задачи из списка должно очищать связь и сохранять задачу")
-    void shouldRemoveTaskFromListAndSave() {
+    void shouldRemoveTaskFromListAndSaveTask() {
         TaskList taskList = new TaskList();
-        taskList.setId(1L);
+        taskList.setId(12L);
 
-        Task task = Task.builder().id(2L).title("To remove").build();
-        task.setTaskList(taskList);
+        TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
+        taskResponseDTO.setId(22L);
 
-        when(taskRepository.findById(2L)).thenReturn(Optional.of(task));
-        when(taskRepository.save(task)).thenReturn(task);
+        TaskListResponseDTO response = new TaskListResponseDTO();
+        response.setId(12L);
 
-        taskListService.deleteTaskFromList(1L, 2L);
+        when(taskListRepository.findById(12L)).thenReturn(Optional.of(taskList));
+        when(taskService.removeTaskListId(22L, 12L)).thenReturn(taskResponseDTO);
+        when(taskListRepository.findById(12L)).thenReturn(Optional.of(taskList));
+        when(taskListMapper.toTaskListResponseDTO(taskList)).thenReturn(response);
 
-        assertThat(task.getTaskList()).isNull();
-        verify(taskRepository).save(task);
+        TaskListResponseDTO result = taskListService.deleteTaskFromList(12L, 22L);
+
+        assertThat(result.getId()).isEqualTo(12L);
+        verify(taskService).removeTaskListId(22L, 12L);
     }
 
     @Test
     @DisplayName("Удаление задачи из другого списка должно бросать исключение")
-    void shouldThrowWhenRemovingTaskFromWrongList() {
+    void shouldThrowWhenRemovingTaskFromAnotherList() {
         TaskList taskList = new TaskList();
-        taskList.setId(1L);
+        taskList.setId(13L);
 
-        TaskList anotherList = new TaskList();
-        anotherList.setId(2L);
+        when(taskListRepository.findById(13L)).thenReturn(Optional.of(taskList));
+        when(taskService.removeTaskListId(23L, 13L)).thenThrow(new TaskNotInListException(13L, 23L));
 
-        Task task = Task.builder().id(2L).title("Wrong list").build();
-        task.setTaskList(anotherList);
+        assertThatThrownBy(() -> taskListService.deleteTaskFromList(13L, 23L))
+                .isInstanceOf(TaskNotInListException.class)
+                .hasMessageContaining("Task with id 23 not found in list with id 13");
 
-        when(taskRepository.findById(2L)).thenReturn(Optional.of(task));
-
-        assertThatThrownBy(() -> taskListService.deleteTaskFromList(1L, 2L))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Task not found in this list");
-
-        verify(taskRepository, never()).save(any());
+        verify(taskService).removeTaskListId(23L, 13L);
     }
 }

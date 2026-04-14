@@ -3,6 +3,7 @@ package com.train.todoapp.web;
 import com.train.todoapp.controller.TaskController;
 import com.train.todoapp.entity.dto.response.TaskResponseDTO;
 import com.train.todoapp.service.TaskService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -28,6 +29,7 @@ public class TaskControllerTest {
     @MockitoBean
     private TaskService taskService;
 
+    @DisplayName("Возвращает задачу по идентификатору")
     @Test
     void shouldReturnTaskById() throws Exception {
         TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
@@ -46,6 +48,7 @@ public class TaskControllerTest {
                         """, false));
     }
 
+    @DisplayName("Создает задачу")
     @Test
     void shouldCreateTask() throws Exception {
         TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
@@ -76,6 +79,7 @@ public class TaskControllerTest {
                         """, false));
     }
 
+    @DisplayName("Возвращает задачи постранично")
     @Test
     void shouldReturnPagedTasks() throws Exception {
         TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
@@ -99,6 +103,7 @@ public class TaskControllerTest {
                         """, false));
     }
 
+    @DisplayName("Обновляет задачу по идентификатору")
     @Test
     void shouldUpdateTaskById() throws Exception {
         TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
@@ -127,6 +132,7 @@ public class TaskControllerTest {
                         """, false));
     }
 
+    @DisplayName("Частично обновляет задачу по идентификатору")
     @Test
     void shouldPatchTaskById() throws Exception {
         TaskResponseDTO taskResponseDTO = new TaskResponseDTO();
@@ -153,6 +159,7 @@ public class TaskControllerTest {
                         """, false));
     }
 
+    @DisplayName("Удаляет задачу по идентификатору")
     @Test
     void shouldDeleteTaskById() throws Exception {
         doNothing().when(taskService).deleteById(6L);
