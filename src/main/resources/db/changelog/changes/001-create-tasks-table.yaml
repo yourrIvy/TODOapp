@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-task-table
+      author: nikitaivannikov
+      changes:
+        - createTable:
+            tableName: tasks
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: title
+                  type: TEXT
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: completed
+                  type: BOOLEAN
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+
+        - createIndex:
+            tableName: tasks
+            indexName: idx_tasks_id
+            columns:
+              - column:
+                  name: id

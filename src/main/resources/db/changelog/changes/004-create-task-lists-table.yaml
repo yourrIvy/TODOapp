@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-task-lists-table
+      author: nikitaivannikov
+      changes:
+        - createTable:
+            tableName: task_lists
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author_id
+                  type: BIGINT
+              - column:
+                  name: executor_id
+                  type: BIGINT
+
+        - addForeignKeyConstraint:
+            baseTableName: task_lists
+            baseColumnNames: author_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_task_lists_author
+
+        - addForeignKeyConstraint:
+            baseTableName: task_lists
+            baseColumnNames: executor_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_task_lists_executor
+
+        - createIndex:
+            tableName: task_lists
+            indexName: idx_task_lists_id
+            columns:
+              - column:
+                  name: id

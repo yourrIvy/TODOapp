@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-tasks-to-lists
+      author: nikitaivannikov
+      changes:
+        - addColumn:
+            tableName: tasks
+            columns:
+              - column:
+                  name: task_list_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+
+        - addForeignKeyConstraint:
+            baseTableName: tasks
+            baseColumnNames: task_list_id
+            referencedTableName: task_lists
+            referencedColumnNames: id
+            constraintName: fk_tasks_task_lists
+            onDelete: SET NULL
+
+        - createIndex:
+            tableName: tasks
+            indexName: idx_tasks_task_list_id
+            columns:
+              - column:
+                  name: task_list_id

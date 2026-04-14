@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-users-table
+      author: nikitaivannikov
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: username
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+        - createIndex:
+            tableName: users
+            indexName: idx_users_id
+            columns:
+              - column:
+                  name: id
