@@ -1,16 +1,15 @@
 package com.train.todoapp.service;
 
-import com.train.todoapp.entity.Task;
 import com.train.todoapp.entity.TaskList;
 import com.train.todoapp.entity.User;
 import com.train.todoapp.entity.dto.request.PatchTaskListRequestDTO;
 import com.train.todoapp.entity.dto.request.TaskListRequestDTO;
 import com.train.todoapp.entity.dto.response.TaskListResponseDTO;
 import com.train.todoapp.entity.mapper.TaskListMapper;
-import com.train.todoapp.exception.TaskNotFoundException;
+import com.train.todoapp.exception.TaskListNotFoundException;
+import com.train.todoapp.exception.UserNotFoundException;
 import com.train.todoapp.repository.TaskListRepository;
 
-import com.train.todoapp.repository.TaskRepository;
 import com.train.todoapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
@@ -27,7 +26,7 @@ public class TaskListService {
     private final TaskListRepository taskListRepository;
     private final TaskListMapper taskListMapper;
     private final UserRepository userRepository;
-    private final TaskRepository taskRepository;
+    private final TaskService taskService;
 
     public TaskListResponseDTO createTaskList(TaskListRequestDTO taskListRequestDTO) {
         TaskList taskList = taskListMapper.toTaskListEntity(taskListRequestDTO);
@@ -43,20 +42,16 @@ public class TaskListService {
 
     @Cacheable(value = "task_lists", key = "#id")
     public TaskListResponseDTO getById(Long id) {
-        TaskList taskList = taskListRepository.findByIdWithTasks(id)
-                .orElseThrow(() -> new RuntimeException("TaskList not found"));
+        TaskList taskList = checkTaskListExists(id);
         return taskListMapper.toTaskListResponseDTO(taskList);
     }
 
     @CachePut(value = "task_lists", key = "#result.id")
     public TaskListResponseDTO  updateById(Long id, TaskListRequestDTO taskListRequestDTO) {
-        TaskList taskList = taskListRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TaskList not found"));
+        TaskList taskList = checkTaskListExists(id);
 
-        User author = userRepository.findById(taskListRequestDTO.getAuthorId())
-                .orElseThrow(() -> new RuntimeException("Author not found"));
-        User executor = userRepository.findById(taskListRequestDTO.getExecutorId())
-                .orElseThrow(() -> new RuntimeException("Executor not found"));
+        User author = checkUserExists(taskListRequestDTO.getAuthorId());
+        User executor = checkUserExists(taskListRequestDTO.getExecutorId());
 
         taskList.setName(taskListRequestDTO.getName());
         taskList.setAuthor(author);
@@ -67,11 +62,10 @@ public class TaskListService {
 
     @CachePut(value = "task_lists", key = "#result.id")
     public TaskListResponseDTO patchById(Long id, PatchTaskListRequestDTO patchTaskListRequestDTO) {
-        TaskList taskList = taskListRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TaskList not found"));
+        TaskList taskList = checkTaskListExists(id);
 
-        userRepository.findById(patchTaskListRequestDTO.getAuthorId()).orElseThrow(() -> new RuntimeException("Author not found"));
-        userRepository.findById(patchTaskListRequestDTO.getExecutorId()).orElseThrow(() -> new RuntimeException("Executor not found"));
+        if (patchTaskListRequestDTO.getAuthorId() != null) {checkUserExists(patchTaskListRequestDTO.getAuthorId());}
+        if (patchTaskListRequestDTO.getExecutorId() != null) {checkUserExists(patchTaskListRequestDTO.getExecutorId());}
 
         taskListMapper.patchEntity(patchTaskListRequestDTO, taskList);
 
@@ -83,26 +77,29 @@ public class TaskListService {
         taskListRepository.deleteById(id);
     }
 
-    public void addTaskToList(Long listId, Long taskId) {
-        TaskList taskList = taskListRepository.findById(listId)
-                .orElseThrow(() -> new RuntimeException("TaskList not found"));
+    @CachePut(value = "task_lists", key = "#result.id")
+    public TaskListResponseDTO addTaskToList(Long listId, Long taskId) {
+        TaskList taskList = checkTaskListExists(listId);
 
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskNotFoundException(taskId));
-
-        task.setTaskList(taskList);
-        taskRepository.save(task);
+        taskService.addTaskListId(taskId, taskList);
+        return taskListMapper.toTaskListResponseDTO(checkTaskListExists(listId));
     }
 
-    public void deleteTaskFromList(Long listId, Long taskId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskNotFoundException(taskId));
+    @CachePut(value = "task_lists", key = "#result.id")
+    public TaskListResponseDTO deleteTaskFromList(Long listId, Long taskId) {
+        checkTaskListExists(listId);
 
-        if (task.getTaskList() == null || !task.getTaskList().getId().equals(listId)) {
-            throw new RuntimeException("Task not found in this list");
-        }
+        taskService.removeTaskListId(taskId, listId);
+        return taskListMapper.toTaskListResponseDTO(checkTaskListExists(listId));
+    }
 
-        task.setTaskList(null);
-        taskRepository.save(task);
+    private TaskList checkTaskListExists(Long id) {
+        return taskListRepository.findById(id)
+                .orElseThrow(() -> new TaskListNotFoundException(id));
+    }
+
+    private User checkUserExists(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 }

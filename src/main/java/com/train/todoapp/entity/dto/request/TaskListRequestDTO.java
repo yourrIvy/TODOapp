@@ -13,9 +13,11 @@ public class TaskListRequestDTO {
     @Schema(description = "Имя списка задач", example = "Планы на отпуск")
     private String name;
 
+    @NotBlank
     @Schema(description = "ID инициатора", example = "1")
     private Long authorId;
 
+    @NotBlank
     @Schema(description = "ID исполнителя", example = "2")
     private Long executorId;
 }

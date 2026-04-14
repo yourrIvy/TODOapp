@@ -1,11 +1,13 @@
 package com.train.todoapp.service;
 
+import com.train.todoapp.entity.TaskList;
 import com.train.todoapp.entity.dto.request.PatchTaskRequestDTO;
 import com.train.todoapp.entity.dto.request.TaskRequestDTO;
 import com.train.todoapp.entity.dto.response.TaskResponseDTO;
 import com.train.todoapp.entity.Task;
 import com.train.todoapp.exception.TaskNotFoundException;
 import com.train.todoapp.entity.mapper.TaskMapper;
+import com.train.todoapp.exception.TaskNotInListException;
 import com.train.todoapp.repository.TaskRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -38,15 +40,13 @@ public class TaskService {
 
     @Cacheable(value = "tasks", key = "#id")
     public TaskResponseDTO getById(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
+        Task task = checkTaskExists(id);
         return taskMapper.toTaskResponseDTO(task);
     }
 
     @CachePut(value = "tasks", key = "#result.id")
     public TaskResponseDTO updateById(Long id, TaskRequestDTO taskRequestDTO) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
+        Task task = checkTaskExists(id);
 
         task.setTitle(taskRequestDTO.getTitle());
         task.setDescription(taskRequestDTO.getDescription());
@@ -57,8 +57,7 @@ public class TaskService {
 
     @CachePut(value = "tasks", key = "#result.id")
     public TaskResponseDTO patchTaskById(Long id, PatchTaskRequestDTO patchTaskRequestDTO) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
+        Task task = checkTaskExists(id);
 
         taskMapper.patchEntity(patchTaskRequestDTO, task);
 
@@ -68,5 +67,29 @@ public class TaskService {
     @CacheEvict(value = "tasks", key = "#id")
     public void deleteById(Long id) {
         taskRepository.deleteById(id);
+    }
+
+    @CachePut(value = "tasks", key = "#result.id")
+    public TaskResponseDTO addTaskListId(Long taskId, TaskList taskList) {
+        Task task = checkTaskExists(taskId);
+        task.setTaskList(taskList);
+        return taskMapper.toTaskResponseDTO(taskRepository.save(task));
+    }
+
+    @CachePut(value = "tasks", key = "result.id")
+    public TaskResponseDTO removeTaskListId(Long taskId, Long listId) {
+        Task task = checkTaskExists(taskId);
+
+        if (task.getTaskList() == null || !task.getTaskList().getId().equals(listId)) {
+            throw new TaskNotInListException(listId, taskId);
+        }
+
+        task.setTaskList(null);
+        return taskMapper.toTaskResponseDTO(taskRepository.save(task));
+    }
+
+    private Task checkTaskExists(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
     }
 }
