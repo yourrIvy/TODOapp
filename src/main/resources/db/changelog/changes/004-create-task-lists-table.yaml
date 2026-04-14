@@ -36,10 +36,3 @@ databaseChangeLog:
             referencedTableName: users
             referencedColumnNames: id
             constraintName: fk_task_lists_executor
-
-        - createIndex:
-            tableName: task_lists
-            indexName: idx_task_lists_id
-            columns:
-              - column:
-                  name: id

@@ -23,10 +23,3 @@ databaseChangeLog:
               - column:
                   name: created_at
                   type: TIMESTAMP
-
-        - createIndex:
-            tableName: tasks
-            indexName: idx_tasks_id
-            columns:
-              - column:
-                  name: id
